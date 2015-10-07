@@ -1,6 +1,6 @@
-# I2CFram Library
+# FramStore Library
 
-The library provides a class to help you to manage a set of FRAM chips as a single store. It will allow you to access your FRAMs through a single, combined address space.
+The library provides a class to help you to manage a set of FRAM chips (such as the as a single store. It will allow you to access your FRAMs through a single, combined address space.
 
 Each FRAM’s storage is accessed at the byte level; each byte has a 16-bit address. The class supports writing to and reading from chips and store on a byte-by-byte basis. It also supports the writing of a blob to a chip or store, and multiple bytes can be read back into a blob. As such, the classes are a good partner for Electric Imp’s [serializer class](https://electricimp.com/docs/libraries/utilities/), which converts Squirrel objects into binary data for storage. The *FramStore* class also supports writing and reading strings.
 
