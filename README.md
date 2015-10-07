@@ -141,4 +141,4 @@ This method returns the FRAM chip object at the specified index within the *Fram
 
 ## License
 
-The FramStore library is licensed under the [MIT License](https://github.com/electricimp/FramStore/LICENSE).
+The FramStore library is licensed under the [MIT License](https://github.com/electricimp/FramStore/blob/master/LICENSE).
