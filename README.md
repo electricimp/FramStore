@@ -8,7 +8,7 @@ Each FRAM’s storage is accessed at the byte level; each byte has a 16-bit addr
 
 ## FramStore Usage
 
-### Constructor: FramStore(*frams*][, *debug*])
+### Constructor: FramStore(*frams*[, *debug*])
 
 The constructor takes an array of up to eight objects representing individual FRAM chips. These objects may be *MB85RC* objects *(see above)* or some other object specifying a different type of FRAM chip.
 
@@ -77,7 +77,7 @@ This method writes the passed blob, *blob*, to *startAddress* within the store. 
 
 The third parameter, *wrap*, is optional and defaults to `false`. If *wrap* is set to `true`, then should there be an attempt to write data beyond the size of the store, then those overflow bytes will be written at the start of the store.
 
-### readString(*startAddress*, *numChars)
+### readString(*startAddress*, *numChars*)
 
 This method returns a string containing the *numChars* characters read from *startAddress* within the store. The store’s capacity will depend on the number of FRAM chips it comprises. If the address is incorrectly specified for the current store, the method returns the value -1.
 
