@@ -1,4 +1,4 @@
-# FramStore #
+# FramStore 2.0.0 #
 
 The library provides a class to help you to manage a set of FRAM chips (such as the as a single store. It will allow you to access your FRAMs through a single, combined address space.
 
@@ -19,7 +19,7 @@ If the constructor encounters an error during initialization, it will return `nu
 #### Example ####
 
 ```squirrel
-#require "FramStore.class.nut:1.0.0"
+#require "FramStore.device.lib.nut:2.0.0"
 #require "MB85RC.class.nut:1.0.0"
 
 // Configure I2C bus
@@ -50,7 +50,19 @@ store.addFrams([f3]);
 
 ### clear(*value*) ###
 
-This method clears the entire store to the specified *value*, an integer between 0 and 255 (0xFF). By default, *value* is 0.
+This method clears the entire store to the specified *value*, an integer between 0x00 and 0xFF (255). 
+
+#### Parameters ####
+
+| Parameter | Data&nbsp;Type | Required? | Description |
+| --- | --- | --- | --- |
+| *value* | Integer | No | The value to write to all the store’s bytes. Default: 0x00 |
+
+#### Returns ####
+
+The instance &mdash; this.
+
+#### Example ####
 
 ```squirrel
 // Set the entire store to 0xAA
@@ -91,37 +103,37 @@ The third parameter, *wrap*, is optional and defaults to `false`. If *wrap* is s
 
 ### chipCount() ###
 
-This method returns the number of FRAM chips that make up the store.
+This method provides the number of FRAM chips that make up the store.
 
 #### Example ####
 
 ```squirrel
 function displayData(store, count = 64, chip = -1) {
-  // Display the store (or chip) contents in the log
-  local a = 0;
-  local min = 0;
-  local max = store.chipCount();
+    // Display the store (or chip) contents in the log
+    local a = 0;
+    local min = 0;
+    local max = store.chipCount();
 
-  if (block != -1) {
-    min = block;
-    max = block + 1;
-  }
-
-  for (local i = min; i < max; ++i) {
-    server.log("Block: " + i);
-    for (local j = 0 ; j < 32768 ; j += count) {
-      local c = frams.framFromAddress(i * 32768);
-      local s = "";
-      for (local k = 0 ; k < count ; ++k) {
-        local b = c.readByte(j + k);
-        s = s + format("%d ", b[0]);
-      }
-
-      s = format("%04X - ", a) + s;
-      server.log(s);
-      a = a + count;
+    if (block != -1) {
+        min = block;
+        max = block + 1;
     }
-  }
+
+    for (local i = min; i < max; ++i) {
+        server.log("Block: " + i);
+        for (local j = 0 ; j < 32768 ; j += count) {
+            local c = frams.framFromAddress(i * 32768);
+            local s = "";
+            for (local k = 0 ; k < count ; ++k) {
+                local b = c.readByte(j + k);
+                s += format("%d ", b[0]);
+            }
+
+            s = format("%04X - ", a) + s;
+            server.log(s);
+            a += count;
+        }
+    }
 }
 ```
 
@@ -141,4 +153,4 @@ This method returns the FRAM chip object at the specified index within the *Fram
 
 ## License ##
 
-The FramStore library is licensed under the [MIT License](https://github.com/electricimp/FramStore/blob/master/LICENSE).
+This library is licensed under the [MIT License](https://github.com/electricimp/FramStore/blob/master/LICENSE).

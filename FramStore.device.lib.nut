@@ -1,7 +1,7 @@
 class FramStore {
     // Defines a FRAM store – ie. the combined storage of 1-8 FRAM chips
 
-    static VERSION = [1,0,0];
+    static VERSION = "2.0.0";
 
     _store = null;
     _chipCount = 0;
@@ -35,7 +35,7 @@ class FramStore {
             foreach (i, chip in frams) {
                 // Add each chip to the _store array. Chip must be configured first
                 _store[i] = _newFram(chip);
-                if (_debug) server.log("Adding FRAM " + i + " at address " + format("0x%04X", _store[i].startAddress));
+                if (_debug) server.log(format("Adding FRAM %d at address 0x%04X", i, _store[i].startAddress));
             }
         }
     }
@@ -74,9 +74,8 @@ class FramStore {
 
     function clear(value = 0) {
         // Run through each chip in the store and zero it
-        foreach (chip in _store) {
-            chip.fram.clear(value);
-        }
+        foreach (chip in _store) chip.fram.clear(value);
+        return this;
     }
 
     function readByte(addr = 0) {
@@ -107,7 +106,7 @@ class FramStore {
         if (numBytes < 1) return -1;
 
         local b = blob(numBytes);
-        for (local i = 0 ; i < numBytes ; ++i) {
+        for (local i = 0 ; i < numBytes ; i++) {
             local v = readByte(startAddr + i);
             if (v == -1) break;
             b.writen(v, 'b');
@@ -126,22 +125,16 @@ class FramStore {
         data.seek(0, 'b');
         local end = startAddr + data.len();
         if (end < _maxAddress) {
-            for (local i = startAddr ; i < end ; ++i) {
-                writeByte(i, data.readn('b'));
-            }
+            for (local i = startAddr ; i < end ; i++) writeByte(i, data.readn('b'));
         } else {
             // Write up to the end of the store
-            for (local i = startAddr ; i < _maxAddress ; ++i) {
-                writeByte(i, data.readn('b'));
-            }
+            for (local i = startAddr ; i < _maxAddress ; i++) writeByte(i, data.readn('b'));
 
             if (wrap) {
                 // If wrap is true, write the remaining bytes
                 // at the start of the store
                 local v = data.len() - data.tell();
-                for (local i = 0 ; i < v ; ++i) {
-                    writeByte(i, data.readn('b'));
-                }
+                for (local i = 0 ; i < v ; i++) writeByte(i, data.readn('b'));
             }
         }
     }
@@ -153,10 +146,10 @@ class FramStore {
         if (numChars < 1) return -1;
 
         local s = "";
-        for (local i = 0 ; i < numChars ; ++i) {
+        for (local i = 0 ; i < numChars ; i++) {
             local v = readByte(startAddr + i);
             if (v == -1) break;
-            s = s + v;
+            s += v;
         }
 
         return s;
@@ -171,24 +164,20 @@ class FramStore {
 
         local end = startAddr + string.len();
         if (end < _maxAddress) {
-            for (local i = startAddr ; i < end ; ++i) {
-                writeByte(i, string[i - startAddr]);
-            }
+            for (local i = startAddr ; i < end ; i++) writeByte(i, string[i - startAddr]);
         } else {
             // Write up to the end of the store
             local c = 0;
-            for (local i = startAddr ; i < _maxAddress ; ++i) {
+            for (local i = startAddr ; i < _maxAddress ; i++) {
                 writeByte(i, string[i - startAddr]);
-                ++c;
+                c++;
             }
 
             if (wrap) {
                 // If wrap is true, write the remaining bytes
                 // at the start of the store
                 local v = string.len() - c;
-                for (local i = 0 ; i < v ; ++i) {
-                    writeByte(i, string[i + c]);
-                }
+                for (local i = 0 ; i < v ; i++) writeByte(i, string[i + c]);
             }
         }
     }
@@ -206,7 +195,6 @@ class FramStore {
     function framFromAddress(addr = 0) {
         // Return a reference to the specific FRAM chip that
         // holds the specified address in the store
-
         if (addr < 0 || addr > _maxAddress) {
             server.error("FRAM address out of range");
             return null;
@@ -220,7 +208,6 @@ class FramStore {
     function framFromIndex(index = 0) {
         // Return a reference to the specific FRAM chip
         // specified by its index in the _frams array
-
         if (index < 0 || index == _chipCount) {
             server.error("FRAM index out of range");
             return null;
@@ -234,7 +221,7 @@ class FramStore {
 
     function _getBlock(addr) {
         // Find the index in the _store array of the fram object which contains addr
-        for (local i = 0 ; i < _store.len() ; ++i) {
+        for (local i = 0 ; i < _store.len() ; i++) {
             local f = _store[i];
             if (addr >= f.startAddress && addr <= f.endAddress) return i;
         }
