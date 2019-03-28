@@ -37,33 +37,19 @@
      *
      */
     constructor (frams = null, debug = false) {
+        _chipCount = 0;
+        _debug = debug;
+        _store = [];
+
         // Note, frams == null is a valid configuration
         if (frams != null) {
             // Convert a single fram object to an array of len() 1
             if (typeof frams != "array") frams = [frams];
 
             // Make sure no more than 8 FRAM chips are included
-            if (frams.len() > 8) {
-                server.error("Misconstructed FRAM store: only 1-8 FRAM chip objects");
-                return null;
-            }
+            if (frams.len() > 8) throw "Misconstructed FRAM store: only 1-8 FRAM chip objects";
 
-            // Set the chip count to the array size
-            _chipCount = frams.len();
-        } else {
-            // No FRAM chip objects passed in so set the chip count to zero
-            _chipCount = 0;
-        }
-
-        _debug = debug;
-        _store = array(_chipCount);
-
-        if (_chipCount > 0) {
-            foreach (i, chip in frams) {
-                // Add each chip to the _store array. Chip must be configured first
-                _store[i] = _newFram(chip);
-                if (_debug) server.log(format("Adding FRAM %d at address 0x%04X", i, _store[i].startAddress));
-            }
+            local result = addFrams(frams);
         }
     }
 
@@ -96,10 +82,30 @@
             return false;
         }
 
+        // Attempt to each new chip to the store
+        local addCount = 0;
         foreach (i, chip in frams) {
-            _store.append(_newFram(chip));
-            _chipCount++;
-            if (_debug) server.log(format("Adding FRAM %d at address 0x%04X", i, _store[i].startAddress));
+            local canAdd = true;
+            local newFram = _newFram(chip);
+            if (_store.len() > 0) {
+                foreach (afram in _store) {
+                    if (newFram.fram == afram.fram) {
+                        // Chip has already been added to the store
+                        canAdd = false;
+                    }
+                }   
+            }
+            if (canAdd) {
+                _store.append(newFram);
+                _chipCount++;
+                addCount++;
+                if (_debug) server.log(format("Adding FRAM %d at address 0x%04X", i, _store[i].startAddress));
+            }
+        }
+
+        if (addCount == 0) {
+            server.error("Framestore.addFrams(): No supplied FRAMs could be added - they are already in the store");
+            return false;
         }
 
         return true;
@@ -134,7 +140,10 @@
         local block = _getBlock(address);
         local chip = framFromIndex(block);
         local subAddress = address - (block * (chip.csize() / 8) * 1024);
-        return chip.readByte(subAddress);
+        
+        // NOTE chip object's readByte() returns a single-character string, so convert to int
+        local v = chip.readByte(subAddress);
+        return v[0];
     }
 
     /**
@@ -209,7 +218,7 @@
                 }
             }
             
-            b.writen(v[0], 'b');
+            b.writen(v, 'b');
         }
 
         return b;
@@ -315,7 +324,7 @@
                 }
             }
 
-            s += v;
+            s += v.tochar();
         }
 
         return s;
@@ -331,7 +340,7 @@
      *  @returns {Instance} The class instance (this) on success, or null if an error occured, eg. invalid address.
      *
      */
-    function writeString(startAddress = 0, string = null, wrap = false) {
+    function writeString(startAddress = 0, chars = null, wrap = false) {
         // Writes the contents of a passed blob into the store at the
         // specified address. Only wraps data that exceeds the end of
         // the store if requested (lost otherwise)
@@ -340,16 +349,16 @@
             return null;
         }
 
-        if (string == null || string.len() == 0) {
+        if (chars == null || chars.len() == 0) {
             server.error("Framestore.readString(): String must have more than zero characters");
             return null;
         }
 
-        local end = startAddress + string.len();
+        local end = startAddress + chars.len();
 
         if (end < _maxAddress) {
             for (local i = startAddress ; i < end ; i++) {
-                local r = writeByte(i, string[i - startAddress]);
+                local r = writeByte(i, chars[i - startAddress]);
                 if (r != 0) {
                     server.error(format("Framestore.writeString(): Error writing data at 0x%04X", i));
                     return null;
@@ -359,7 +368,7 @@
             // Write up to the end of the store
             local c = 0;
             for (local i = startAddress ; i < _maxAddress ; i++) {
-                local r = writeByte(i, string[i - startAddress]);
+                local r = writeByte(i, chars[i - startAddress]);
                 if (r != 0) {
                     server.error(format("Framestore.writeString(): Error writing data at 0x%04X", i));
                     return null;
@@ -370,9 +379,9 @@
             if (wrap) {
                 // If wrap is true, write the remaining bytes
                 // at the start of the store
-                local v = string.len() - c;
+                local v = chars.len() - c;
                 for (local i = 0 ; i < v ; i++) {
-                    local r = writeByte(i, string[i + c]);
+                    local r = writeByte(i, chars[i + c]);
                     if (r != 0) {
                         server.error(format("Framestore.writeString(): Error writing data at 0x%04X", i));
                         return null;
@@ -395,13 +404,13 @@
     }
 
     /**
-     *  Return the store's top address (+1)
+     *  Return the store's top address
      *
      *  @returns {Integer} The top address.
      *
      */
     function maxAddress() {
-        return _maxAddress;
+        return _maxAddress - 1;
     }
 
     /**
@@ -413,7 +422,7 @@
      *
      */
     function framFromAddress(address = 0x00) {
-        if (address < 0 || address > _maxAddress) {
+        if (address < 0 || address >= _maxAddress) {
             server.error("FramStore.framFromAddress(): Address out of range");
             return null;
         }
@@ -431,7 +440,7 @@
      *
      */
     function framFromIndex(index = 0) {
-        if (index < 0 || index == _chipCount) {
+        if (index < 0 || index >= _chipCount) {
             server.error("FramStore.framFromIndex(): Index out of range");
             return null;
         }
