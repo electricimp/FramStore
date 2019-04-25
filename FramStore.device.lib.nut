@@ -11,11 +11,11 @@
  *
  */
  class FramStore {
-    
+
     /**
      * @property {string} VERSION - The library version
-     * 
-     */    
+     *
+     */
     static VERSION = "2.0.0";
 
     // Private properties
@@ -32,7 +32,7 @@
      *
      *  @param {Array}   [frams]  - Array of MB85RC FRAM chip objects to be added to the store, up to a maximum of 8. Default: none.
      *  @param {Boolean} [debug ] - Set/unset to log/silence extra debug messages. Default: false
-     *  
+     *
      *  @returns {instance} The instance
      *
      */
@@ -41,7 +41,7 @@
         _debug = debug;
         _store = [];
 
-        // Note, frams == null is a valid configuration
+        // NOTE frams == null is a valid configuration
         if (frams != null) {
             // Convert a single fram object to an array of len() 1
             if (typeof frams != "array") frams = [frams];
@@ -49,6 +49,7 @@
             // Make sure no more than 8 FRAM chips are included
             if (frams.len() > 8) throw "Misconstructed FRAM store: only 1-8 FRAM chip objects";
 
+            // Add any input frams to the store
             local result = addFrams(frams);
         }
     }
@@ -58,7 +59,7 @@
      *
      *  @param {Array} frams - Array of FRAM chip objects to be added to the store, up to a maximum of 8. Default: none.
      *
-     *  @returns {Boolean} Whether the FRAM chips were added (true) or not (false).  
+     *  @returns {Boolean} Whether the FRAM chips were added (true) or not (false).
      *
      */
     function addFrams(frams = null) {
@@ -93,7 +94,7 @@
                         // Chip has already been added to the store
                         canAdd = false;
                     }
-                }   
+                }
             }
             if (canAdd) {
                 _store.append(newFram);
@@ -112,7 +113,7 @@
     }
 
     /**
-     *  Add FRAM chip(s) to the array. Will fail if there are more than 8 chips before or after the operation.
+     *  Erase each byte in the store.
      *
      *  @param {Integer} [value] - 8-bit value to be written to each byte in the store. Bits above 7 are ignored. Default: 0x00.
      *
@@ -140,14 +141,14 @@
         local block = _getBlock(address);
         local chip = framFromIndex(block);
         local subAddress = address - (block * (chip.csize() / 8) * 1024);
-        
+
         // NOTE chip object's readByte() returns a single-character string, so convert to int
         local v = chip.readByte(subAddress);
         return v[0];
     }
 
     /**
-     *  Read and return the value of the byte at the specified store address.
+     *  Write a byte at the specified store address.
      *
      *  @param {Integer} [address] - Numeric address of the required byte. Default: 0x00.
      *  @param {Integer} [byte]    - 8-bit value to be written to each byte in the store. Default: 0x00.
@@ -162,7 +163,7 @@
             server.error("Framestore.writeByte(): Address out of range");
             return -1;
         }
-        
+
         if (byte < 0 || byte > 0xFF) {
             server.error("Framestore.writeByte(): Data out of range");
             return -1;
@@ -177,7 +178,7 @@
      *  Read a specified number of bytes starting at the specified store address and return them as a blob.
      *
      *  @param {Integer} [startAddress] - Numeric address of the start of the required byte. Default: 0x00.
-     *  @param {Integer} [numBytes]     - How many bytes to read. Default: 0x01.
+     *  @param {Integer} [numBytes]     - How many bytes to read. Default: 1.
      *
      *  @returns {Blob} The blob on success, or null if an error occured, eg. invalid address.
      *
@@ -205,9 +206,9 @@
                     return null;
                 }
             }
-            
+
             local v = readByte(startAddress + i);
-            
+
             if (v == -1) {
                 server.error("Framestore.readBlob(): Read error");
                 if (i > 0) {
@@ -217,7 +218,7 @@
                     return null;
                 }
             }
-            
+
             b.writen(v, 'b');
         }
 
@@ -247,7 +248,7 @@
 
         data.seek(0, 'b');
         local end = startAddress + data.len();
-        
+
         if (end < _maxAddress) {
             for (local i = startAddress ; i < end ; i++) {
                 local r = writeByte(i, data.readn('b'));
@@ -302,7 +303,7 @@
         }
 
         local s = "";
-        
+
         for (local i = 0 ; i < numChars ; i++) {
             if (startAddress + i >= _maxAddress) {
                 if (i > 0) {
@@ -312,9 +313,9 @@
                     return null;
                 }
             }
-            
+
             local v = readByte(startAddress + i);
-            
+
             if (v == -1) {
                 server.error("Framestore.readString(): Read error");
                 if (i > 0) {
@@ -389,7 +390,7 @@
                 }
             }
         }
-        
+
         return this;
     }
 
